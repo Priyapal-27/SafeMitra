@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,24 +8,29 @@ import {
   Platform,
   ScrollView,
   Pressable,
-} from 'react-native';
-import { styles } from '../styles-part/MobileRegistrationStyles';
-import SafeMitraLogo from '../../components/SafeMitraLogo';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native";
+import { styles } from "../styles-part/MobileRegistrationStyles";
+import SafeMitraLogo from "../../components/SafeMitraLogo";
+import { Ionicons } from "@expo/vector-icons";
+import { auth, RecaptchaVerifier } from "./firebaseConfig";
+import { signInWithPhoneNumber } from "firebase/auth";
+import { useState } from "react";
+import { View, TextInput, Button, Alert } from "react-native";
 
 const MobileRegistrationScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    mobileNumber: '',
-    pin: '',
-    confirmPin: '',
+    name: "",
+    mobileNumber: "",
+    pin: "",
+    confirmPin: "",
   });
   const [showPin, setShowPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [otp, setOtp] = useState("");
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
@@ -33,17 +38,17 @@ const MobileRegistrationScreen = ({ navigation }) => {
 
   const handleRegister = () => {
     if (!agreeToTerms) {
-      alert('Please agree to the Privacy Policy and Terms of Use');
+      alert("Please agree to the Privacy Policy and Terms of Use");
       return;
     }
     // Add your registration logic here
     // For now, we'll just show a success message
-    alert('Registration successful!');
+    alert("Registration successful!");
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -62,7 +67,9 @@ const MobileRegistrationScreen = ({ navigation }) => {
 
         <View style={styles.formContainer}>
           <Text style={styles.title}>Register with Mobile Number</Text>
-          <Text style={styles.subtitle}>Enter basic details to get started</Text>
+          <Text style={styles.subtitle}>
+            Enter basic details to get started
+          </Text>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Full Name</Text>
@@ -71,7 +78,7 @@ const MobileRegistrationScreen = ({ navigation }) => {
               placeholder="e.g., Riya Sharma"
               placeholderTextColor="#999"
               value={formData.name}
-              onChangeText={(text) => handleInputChange('name', text)}
+              onChangeText={(text) => handleInputChange("name", text)}
             />
           </View>
 
@@ -83,7 +90,7 @@ const MobileRegistrationScreen = ({ navigation }) => {
               placeholderTextColor="#999"
               keyboardType="phone-pad"
               value={formData.mobileNumber}
-              onChangeText={(text) => handleInputChange('mobileNumber', text)}
+              onChangeText={(text) => handleInputChange("mobileNumber", text)}
             />
           </View>
 
@@ -98,14 +105,14 @@ const MobileRegistrationScreen = ({ navigation }) => {
                 keyboardType="numeric"
                 maxLength={4}
                 value={formData.pin}
-                onChangeText={(text) => handleInputChange('pin', text)}
+                onChangeText={(text) => handleInputChange("pin", text)}
               />
               <TouchableOpacity
                 style={styles.eyeIcon}
                 onPress={() => setShowPin(!showPin)}
               >
                 <Ionicons
-                  name={showPin ? 'eye-off' : 'eye'}
+                  name={showPin ? "eye-off" : "eye"}
                   size={24}
                   color="#999"
                 />
@@ -124,14 +131,14 @@ const MobileRegistrationScreen = ({ navigation }) => {
                 keyboardType="numeric"
                 maxLength={4}
                 value={formData.confirmPin}
-                onChangeText={(text) => handleInputChange('confirmPin', text)}
+                onChangeText={(text) => handleInputChange("confirmPin", text)}
               />
               <TouchableOpacity
                 style={styles.eyeIcon}
                 onPress={() => setShowConfirmPin(!showConfirmPin)}
               >
                 <Ionicons
-                  name={showConfirmPin ? 'eye-off' : 'eye'}
+                  name={showConfirmPin ? "eye-off" : "eye"}
                   size={24}
                   color="#999"
                 />
@@ -145,14 +152,14 @@ const MobileRegistrationScreen = ({ navigation }) => {
               onPress={() => setAgreeToTerms(!agreeToTerms)}
             >
               <Ionicons
-                name={agreeToTerms ? 'checkbox' : 'square-outline'}
+                name={agreeToTerms ? "checkbox" : "square-outline"}
                 size={20}
                 color="#d32f2f"
               />
             </Pressable>
             <Text style={styles.termsText}>
-              I agree to the{' '}
-              <Text style={styles.termsLink}>Privacy Policy</Text> &{' '}
+              I agree to the{" "}
+              <Text style={styles.termsLink}>Privacy Policy</Text> &{" "}
               <Text style={styles.termsLink}>Terms of Use</Text>
             </Text>
           </View>
@@ -168,12 +175,12 @@ const MobileRegistrationScreen = ({ navigation }) => {
 
           <Text style={styles.encryptedText}>
             <Ionicons name="shield-checkmark" size={16} color="#999" />
-            {' Your information is end-to-end encrypted'}
+            {" Your information is end-to-end encrypted"}
           </Text>
 
           <View style={styles.loginContainer}>
             <Text style={styles.loginText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
               <Text style={styles.loginLink}>Login →</Text>
             </TouchableOpacity>
           </View>
@@ -183,4 +190,4 @@ const MobileRegistrationScreen = ({ navigation }) => {
   );
 };
 
-export default MobileRegistrationScreen; 
+export default MobileRegistrationScreen;
