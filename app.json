@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "SafeMitra",
+    "slug": "safemitra",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#FF3B30"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.safemitra.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FF3B30"
+      },
+      "package": "com.safemitra.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": false
+    }
+  }
+} 

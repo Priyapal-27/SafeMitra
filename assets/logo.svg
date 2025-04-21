@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="150" height="50" viewBox="0 0 150 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="40" height="40" rx="8" fill="#FF3B30"/>
+  <path d="M20 12L28 20L20 28L12 20L20 12Z" fill="white"/>
+  <text x="50" y="30" font-family="Arial" font-size="20" font-weight="bold" fill="#FF3B30">SafeMitra</text>
+</svg> 
