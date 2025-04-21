@@ -13,21 +13,8 @@ import SafeMitraLogo from '../../components/SafeMitraLogo';
 import { Ionicons } from '@expo/vector-icons';
 
 const LoginScreen = ({ navigation }) => {
-  const [loginMethod, setLoginMethod] = useState('otp');
   const [mobileNumber, setMobileNumber] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [pin, setPin] = useState(['', '', '', '']);
-
-  const handleOtpChange = (value, index) => {
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value !== '' && index < 5) {
-      // Logic for auto-focusing next input would go here
-    }
-  };
 
   const handlePinChange = (value, index) => {
     const newPin = [...pin];
@@ -40,27 +27,13 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const handleSendOTP = () => {
-    if (!mobileNumber) {
-      alert('Please enter your mobile number');
-      return;
-    }
-    // Add OTP sending logic here
-    alert('OTP sent successfully!');
-  };
-
   const handleLogin = () => {
     if (!mobileNumber) {
       alert('Please enter your mobile number');
       return;
     }
 
-    if (loginMethod === 'otp' && otp.join('').length !== 6) {
-      alert('Please enter complete OTP');
-      return;
-    }
-
-    if (loginMethod === 'pin' && pin.join('').length !== 4) {
+    if (pin.join('').length !== 4) {
       alert('Please enter complete PIN');
       return;
     }
@@ -92,7 +65,7 @@ const LoginScreen = ({ navigation }) => {
         <View style={styles.formContainer}>
           <Text style={styles.title}>Secure Login</Text>
           <Text style={styles.subtitle}>
-            Enter your mobile number and PIN or OTP
+            Enter your mobile number and PIN
           </Text>
 
           <View style={styles.inputContainer}>
@@ -110,51 +83,8 @@ const LoginScreen = ({ navigation }) => {
             </View>
           </View>
 
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={[styles.toggleButton, loginMethod === 'otp' && styles.activeToggle]}
-              onPress={() => setLoginMethod('otp')}
-            >
-              <Text style={[styles.toggleText, loginMethod === 'otp' && styles.activeToggleText]}>
-                Use OTP
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleButton, loginMethod === 'pin' && styles.activeToggle]}
-              onPress={() => setLoginMethod('pin')}
-            >
-              <Text style={[styles.toggleText, loginMethod === 'pin' && styles.activeToggleText]}>
-                Use PIN
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {loginMethod === 'otp' ? (
-            <>
-              <View style={styles.otpContainer}>
-                {otp.map((digit, index) => (
-                  <TextInput
-                    key={index}
-                    style={styles.otpInput}
-                    maxLength={1}
-                    keyboardType="number-pad"
-                    value={digit}
-                    onChangeText={(value) => handleOtpChange(value, index)}
-                    secureTextEntry
-                  />
-                ))}
-              </View>
-
-              <TouchableOpacity
-                style={styles.sendOtpButton}
-                onPress={handleSendOTP}
-              >
-                <Text style={styles.sendOtpText}>
-                  <Ionicons name="send" size={18} color="#FFF" /> Send OTP
-                </Text>
-              </TouchableOpacity>
-            </>
-          ) : (
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Enter PIN</Text>
             <View style={styles.pinContainer}>
               {pin.map((digit, index) => (
                 <TextInput
@@ -168,7 +98,7 @@ const LoginScreen = ({ navigation }) => {
                 />
               ))}
             </View>
-          )}
+          </View>
 
           <TouchableOpacity
             style={styles.verifyButton}

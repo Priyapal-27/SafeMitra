@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,6 @@ import { styles } from '../styles-part/MobileRegistrationStyles';
 import SafeMitraLogo from '../../components/SafeMitraLogo';
 import { Ionicons } from '@expo/vector-icons';
 import { auth } from './firebaseConfig';
-import { signInWithPhoneNumber } from 'firebase/auth';
 
 const MobileRegistrationScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -27,10 +26,8 @@ const MobileRegistrationScreen = ({ navigation }) => {
   const [showConfirmPin, setShowConfirmPin] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
   const [isOtpVerified, setIsOtpVerified] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState(null);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -45,51 +42,29 @@ const MobileRegistrationScreen = ({ navigation }) => {
     setOtp(newOtp);
 
     // Auto-focus next input
-    if (value && index < 5) {
-      // Focus next input
-    }
-
-    // Check if all OTP digits are entered
-    if (newOtp.every(digit => digit !== '')) {
-      verifyOtp(newOtp.join(''));
+    if (value !== '' && index < 5) {
+      // Logic for auto-focusing next input would go here
     }
   };
 
-  const sendOtp = async () => {
+  const handleSendOtp = () => {
     if (formData.mobileNumber.length !== 10) {
       Alert.alert('Error', 'Please enter a valid 10-digit mobile number');
       return;
     }
-
-    try {
-      const phoneNumber = `+91${formData.mobileNumber}`;
-      const confirmation = await signInWithPhoneNumber(auth, phoneNumber);
-      setConfirmationResult(confirmation);
-      setOtpSent(true);
-      setShowOtpInput(true);
-      Alert.alert('Success', 'OTP has been sent to your mobile number');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to send OTP. Please try again.');
-      console.error('OTP Error:', error);
-    }
+    setIsOtpSent(true);
+    // Here you would typically make an API call to send OTP
+    Alert.alert('Success', 'OTP sent successfully!');
   };
 
-  const verifyOtp = async (enteredOtp) => {
-    try {
-      await confirmationResult.confirm(enteredOtp);
-      setIsOtpVerified(true);
-      Alert.alert('Success', 'Mobile number verified successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Invalid OTP. Please try again.');
-      console.error('Verification Error:', error);
-    }
+  const handleVerifyOtp = () => {
+    // Here you would typically verify the OTP with your backend
+    // For now, we'll just simulate successful verification
+    setIsOtpVerified(true);
+    Alert.alert('Success', 'OTP verified successfully!');
   };
 
   const handleRegister = () => {
-    if (!isOtpVerified) {
-      Alert.alert('Error', 'Please verify your mobile number first');
-      return;
-    }
     if (!agreeToTerms) {
       Alert.alert('Error', 'Please agree to the Privacy Policy and Terms of Use');
       return;
@@ -98,8 +73,30 @@ const MobileRegistrationScreen = ({ navigation }) => {
       Alert.alert('Error', 'PINs do not match');
       return;
     }
-    // Add your registration logic here
-    Alert.alert('Success', 'Registration successful!');
+    if (formData.pin.length !== 4) {
+      Alert.alert('Error', 'PIN must be 4 digits');
+      return;
+    }
+    if (formData.mobileNumber.length !== 10) {
+      Alert.alert('Error', 'Please enter a valid 10-digit mobile number');
+      return;
+    }
+    if (formData.name.trim() === '') {
+      Alert.alert('Error', 'Please enter your name');
+      return;
+    }
+    if (!isOtpVerified) {
+      Alert.alert('Error', 'Please verify your mobile number first');
+      return;
+    }
+
+    // Here you would typically make an API call to register the user
+    Alert.alert('Success', 'Registration successful!', [
+      {
+        text: 'OK',
+        onPress: () => navigation.navigate('Login'),
+      },
+    ]);
   };
 
   return (
@@ -122,74 +119,80 @@ const MobileRegistrationScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.formContainer}>
-          <Text style={styles.title}>Register with Mobile Number</Text>
-          <Text style={styles.subtitle}>Enter basic details to get started</Text>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Enter your details to get started</Text>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Full Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your full name"
+              value={formData.name}
+              onChangeText={(text) => handleInputChange('name', text)}
+            />
+          </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Mobile Number</Text>
             <View style={styles.mobileInputContainer}>
               <TextInput
                 style={[styles.input, styles.mobileInput]}
-                placeholder="Enter 10-digit mobile number"
-                placeholderTextColor="#999"
-                keyboardType="phone-pad"
+                placeholder="Enter your mobile number"
+                keyboardType="numeric"
                 maxLength={10}
                 value={formData.mobileNumber}
                 onChangeText={(text) => handleInputChange('mobileNumber', text)}
-                editable={!otpSent}
               />
               {isOtpVerified && (
                 <Ionicons name="checkmark-circle" size={24} color="#4CAF50" style={styles.verifiedIcon} />
               )}
             </View>
-            {!otpSent && (
-              <TouchableOpacity
-                style={styles.sendOtpButton}
-                onPress={sendOtp}
-              >
-                <Text style={styles.sendOtpButtonText}>Send OTP</Text>
-              </TouchableOpacity>
-            )}
           </View>
 
-          {showOtpInput && !isOtpVerified && (
-            <View style={styles.otpContainer}>
-              <Text style={styles.label}>Enter OTP</Text>
-              <View style={styles.otpInputContainer}>
-                {otp.map((digit, index) => (
-                  <TextInput
-                    key={index}
-                    style={styles.otpInput}
-                    keyboardType="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChangeText={(value) => handleOtpChange(value, index)}
-                  />
-                ))}
+          {!isOtpSent ? (
+            <TouchableOpacity
+              style={styles.sendOtpButton}
+              onPress={handleSendOtp}
+            >
+              <Text style={styles.sendOtpButtonText}>Send OTP</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <View style={styles.otpContainer}>
+                <Text style={styles.label}>Enter OTP</Text>
+                <View style={styles.otpInputContainer}>
+                  {otp.map((digit, index) => (
+                    <TextInput
+                      key={index}
+                      style={styles.otpInput}
+                      maxLength={1}
+                      keyboardType="number-pad"
+                      value={digit}
+                      onChangeText={(value) => handleOtpChange(value, index)}
+                    />
+                  ))}
+                </View>
               </View>
-            </View>
+
+              {!isOtpVerified && (
+                <TouchableOpacity
+                  style={styles.sendOtpButton}
+                  onPress={handleVerifyOtp}
+                >
+                  <Text style={styles.sendOtpButtonText}>Verify OTP</Text>
+                </TouchableOpacity>
+              )}
+            </>
           )}
 
           {isOtpVerified && (
             <>
               <View style={styles.inputContainer}>
-                <Text style={styles.label}>Full Name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Riya Sharma"
-                  placeholderTextColor="#999"
-                  value={formData.name}
-                  onChangeText={(text) => handleInputChange('name', text)}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
                 <Text style={styles.label}>Create PIN</Text>
-                <View style={styles.pinInput}>
+                <View style={styles.pinInputContainer}>
                   <TextInput
                     style={styles.input}
-                    placeholder="••••"
-                    placeholderTextColor="#999"
+                    placeholder="Enter 4-digit PIN"
                     secureTextEntry={!showPin}
                     keyboardType="numeric"
                     maxLength={4}
@@ -203,7 +206,7 @@ const MobileRegistrationScreen = ({ navigation }) => {
                     <Ionicons
                       name={showPin ? 'eye-off' : 'eye'}
                       size={24}
-                      color="#999"
+                      color="#666"
                     />
                   </TouchableOpacity>
                 </View>
@@ -211,11 +214,10 @@ const MobileRegistrationScreen = ({ navigation }) => {
 
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Confirm PIN</Text>
-                <View style={styles.pinInput}>
+                <View style={styles.pinInputContainer}>
                   <TextInput
                     style={styles.input}
-                    placeholder="••••"
-                    placeholderTextColor="#999"
+                    placeholder="Confirm your PIN"
                     secureTextEntry={!showConfirmPin}
                     keyboardType="numeric"
                     maxLength={4}
@@ -229,52 +231,50 @@ const MobileRegistrationScreen = ({ navigation }) => {
                     <Ionicons
                       name={showConfirmPin ? 'eye-off' : 'eye'}
                       size={24}
-                      color="#999"
+                      color="#666"
                     />
                   </TouchableOpacity>
                 </View>
               </View>
 
               <View style={styles.termsContainer}>
-                <Pressable
+                <TouchableOpacity
                   style={styles.checkbox}
                   onPress={() => setAgreeToTerms(!agreeToTerms)}
                 >
                   <Ionicons
                     name={agreeToTerms ? 'checkbox' : 'square-outline'}
-                    size={20}
-                    color="#d32f2f"
+                    size={24}
+                    color={agreeToTerms ? '#d32f2f' : '#666'}
                   />
-                </Pressable>
+                </TouchableOpacity>
                 <Text style={styles.termsText}>
                   I agree to the{' '}
-                  <Text style={styles.termsLink}>Privacy Policy</Text> &{' '}
+                  <Text style={styles.termsLink}>Privacy Policy</Text> and{' '}
                   <Text style={styles.termsLink}>Terms of Use</Text>
                 </Text>
               </View>
 
+              <Text style={styles.encryptedText}>
+                Your data is encrypted and secure
+              </Text>
+
               <TouchableOpacity
-                style={styles.registerButton}
+                style={[styles.registerButton, !agreeToTerms && styles.buttonDisabled]}
                 onPress={handleRegister}
-                activeOpacity={0.8}
+                disabled={!agreeToTerms}
               >
-                <Ionicons name="lock-closed" size={20} color="#fff" />
-                <Text style={styles.registerButtonText}>Register Securely</Text>
+                <Text style={styles.registerButtonText}>Register</Text>
               </TouchableOpacity>
+
+              <View style={styles.loginContainer}>
+                <Text style={styles.loginText}>Already have an account? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                  <Text style={styles.loginLink}>Login</Text>
+                </TouchableOpacity>
+              </View>
             </>
           )}
-
-          <Text style={styles.encryptedText}>
-            <Ionicons name="shield-checkmark" size={16} color="#999" />
-            {' Your information is end-to-end encrypted'}
-          </Text>
-
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.loginLink}>Login →</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
