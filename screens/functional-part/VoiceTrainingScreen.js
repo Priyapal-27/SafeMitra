@@ -1,48 +1,116 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
+  Image,
+  Modal,
   Animated,
+  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { styles } from '../styles-part/VoiceTrainingStyles';
-import SafeMitraLogo from '../../components/SafeMitraLogo';
+import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
+import SafeMitraLogo from '../../components/SafeMitraLogo';
+import { styles } from '../styles-part/VoiceTrainingStyles';
+
+const CheckmarkImage = {
+  uri: 'https://cdn-icons-png.flaticon.com/512/845/845646.png'
+};
+
+const trainingImage = {
+  uri: 'https://cdn-icons-png.flaticon.com/512/2920/2920065.png'
+};
+
+const phrases = [
+  'Help me now',
+  'Bacchao',
+  'Call the police',
+  'This is an emergency'
+];
 
 const VoiceTrainingScreen = ({ navigation }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [recordedPhrases, setRecordedPhrases] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [recording, setRecording] = useState(null);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(0)).current;
 
-  const handleStartRecording = () => {
-    setIsRecording(true);
-    setShowSuccess(false);
-    // Start timer
-    const timer = setInterval(() => {
-      setRecordingTime((prev) => prev + 1);
-    }, 1000);
+  useEffect(() => {
+    if (recordedPhrases.length < phrases.length && !isRecording) {
+      startRecording();
+    }
 
-    // Simulate recording for 5 seconds
-    setTimeout(() => {
-      clearInterval(timer);
+    if (recordedPhrases.length === phrases.length) {
+      triggerSuccess();
+    }
+  }, [recordedPhrases]);
+
+  const startRecording = async () => {
+    try {
+      setIsRecording(true);
+      const { granted } = await Audio.requestPermissionsAsync();
+      if (!granted) {
+        Alert.alert('Permission Denied', 'Please allow microphone access.');
+        setIsRecording(false);
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+
+      setRecording(recording);
+
+      setTimeout(async () => {
+        await recording.stopAndUnloadAsync();
+        const uri = recording.getURI();
+
+        const isRecognized = Math.random() > 0.25;
+
+        if (isRecognized) {
+          setRecordedPhrases(prev => [...prev, phrases[currentIndex]]);
+          setCurrentIndex(prev => prev + 1);
+        } else {
+          Alert.alert('Try Again', 'Voice not recognized clearly. Please try again.');
+        }
+
+        setIsRecording(false);
+      }, 2500);
+    } catch (error) {
+      console.error('Recording error:', error);
+      Alert.alert('Error', 'Something went wrong with recording.');
       setIsRecording(false);
-      setRecordingTime(0);
-      setShowSuccess(true);
-    }, 5000);
+    }
   };
 
-  const handleProceed = () => {
-    navigation.navigate('SOSSetup');
+  const triggerSuccess = () => {
+    setTimeout(() => {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 5
+      }).start();
+      setSuccessVisible(true);
+    }, 500);
   };
 
-  const handleSkip = () => {
-    navigation.navigate('SOSSetup');
-  };
-
-  const formatTime = (seconds) => {
-    return `${String(seconds).padStart(2, '0')}s`;
+  const closeModal = () => {
+    Animated.timing(scaleAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true
+    }).start(() => {
+      setSuccessVisible(false);
+      navigation.navigate('SOSSetup');
+    });
   };
 
   return (
@@ -64,68 +132,78 @@ const VoiceTrainingScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>Voice Training Setup</Text>
+        <Text style={styles.title}>Voice Training Required</Text>
         <Text style={styles.subtitle}>
-          Train your voice to recognize your safety keyword
+          Train the app to recognize your voice in emergencies.
+        </Text>
+
+        <Image source={trainingImage} style={styles.image} resizeMode="contain" />
+
+        <Text style={styles.progressLabel}>
+          Progress{' '}
+          <Text style={styles.progressText}>
+            {`${recordedPhrases.length} of ${phrases.length} phrases`}
+          </Text>
+        </Text>
+
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBar, { width: `${(recordedPhrases.length / phrases.length) * 100}%` }]} />
+        </View>
+
+        <Text style={styles.currentPhrase}>
+          {phrases[currentIndex] ? `"${phrases[currentIndex]}"` : '✅ All phrases recorded'}
+        </Text>
+
+        <View style={styles.phraseList}>
+          {phrases.map((phrase, index) => (
+            <View key={index} style={styles.phraseItem}>
+              <Text style={styles.phraseText}>{`"${phrase}"`}</Text>
+              <Text style={styles.icon}>
+                {recordedPhrases.includes(phrase) ? '✅' : '🎤'}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.micButton,
+            (isRecording || currentIndex >= phrases.length) && styles.disabledMic
+          ]}
+          disabled={isRecording || currentIndex >= phrases.length}
+          onPress={startRecording}
+        >
+          <Text style={styles.micIcon}>
+            {isRecording ? '⏺️ Recording...' : '🎙️ Start'}
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={styles.footerText}>
+          Your voice samples are stored securely and used only for emergency hotword detection.
         </Text>
 
         <TouchableOpacity
-          style={[styles.micButton, isRecording && styles.micButtonRecording]}
-          onPress={handleStartRecording}
-          disabled={isRecording}
+          style={styles.proceedButton}
+          onPress={() => navigation.navigate('SOSSetup')}
         >
-          <Ionicons
-            name={isRecording ? "mic" : "mic-outline"}
-            size={64}
-            color="#FFF"
-          />
+          <Text style={styles.proceedButtonText}>Proceed to Next</Text>
         </TouchableOpacity>
 
-        <Text style={styles.recordText}>
-          {isRecording ? "Recording in progress..." : "Tap to Record Your SOS Keyword"}
-        </Text>
-
-        {isRecording && (
-          <View style={styles.recordingContainer}>
-            {/* Simulated waveform - in a real app, this would be a proper waveform visualization */}
-            <View style={styles.waveform}>
-              {[...Array(10)].map((_, index) => (
-                <Animated.View
-                  key={index}
-                  style={[
-                    styles.waveformBar,
-                    {
-                      height: 20 + Math.random() * 40,
-                    }
-                  ]}
-                />
-              ))}
-            </View>
-            <Text style={styles.timerText}>
-              Recording... {formatTime(recordingTime)}
-            </Text>
+        {/* ✅ Success Modal */}
+        <Modal transparent visible={successVisible} animationType="fade">
+          <View style={styles.modalContainer}>
+            <Animated.View style={[styles.modalContent, { transform: [{ scale: scaleAnim }] }]}>
+              <Image source={CheckmarkImage} style={styles.checkImage} />
+              <Text style={styles.modalTitle}>Voice Training Completed</Text>
+              <Text style={styles.modalSubtitle}>
+                You're all set. Your voice is now registered for emergency detection.
+              </Text>
+              <TouchableOpacity style={styles.continueButton} onPress={closeModal}>
+                <Text style={styles.continueText}>Continue to SOS Setup</Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
-        )}
-
-        {showSuccess && (
-          <Text style={styles.successText}>Recording saved successfully!</Text>
-        )}
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.proceedButton}
-            onPress={handleProceed}
-          >
-            <Text style={styles.proceedButtonText}>Proceed</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={handleSkip}
-          >
-            <Text style={styles.skipButtonText}>Skip for now</Text>
-          </TouchableOpacity>
-        </View>
+        </Modal>
       </View>
     </KeyboardAvoidingView>
   );

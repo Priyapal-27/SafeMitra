@@ -13,13 +13,17 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.safemitra.app"
+      "bundleIdentifier": "com.safemitra.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "We need access to your microphone to record voice samples for emergency detection."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FF3B30"
       },
-      "package": "com.safemitra.app"
+      "package": "com.safemitra.app",
+      "permissions": ["RECORD_AUDIO"]
     },
     "web": {
       "bundler": "metro",

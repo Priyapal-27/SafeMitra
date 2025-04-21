@@ -122,4 +122,47 @@ export const styles = StyleSheet.create({
     color: '#d32f2f',
     fontWeight: '600',
   },
+  mobileInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mobileInput: {
+    flex: 1,
+    marginRight: 10,
+  },
+  verifiedIcon: {
+    marginLeft: 10,
+  },
+  sendOtpButton: {
+    backgroundColor: '#d32f2f',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  sendOtpButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  otpContainer: {
+    marginBottom: 20,
+  },
+  otpInputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  otpInput: {
+    width: 45,
+    height: 45,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 18,
+    color: '#333333',
+    backgroundColor: '#FFFFFF',
+  },
 }); 
