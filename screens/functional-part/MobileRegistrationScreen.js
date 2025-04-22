@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,28 +9,33 @@ import {
   ScrollView,
   Pressable,
   Alert,
-} from 'react-native';
-import { styles } from '../styles-part/MobileRegistrationStyles';
-import SafeMitraLogo from '../../components/SafeMitraLogo';
-import { Ionicons } from '@expo/vector-icons';
-import { auth } from './firebaseConfig';
+} from "react-native";
+import { styles } from "../styles-part/MobileRegistrationStyles";
+import SafeMitraLogo from "../../components/SafeMitraLogo";
+import { Ionicons } from "@expo/vector-icons";
+import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
+import { signInWithPhoneNumber } from "firebase/auth";
+import firebaseConfig from "./firebaseConfig";
 
 const MobileRegistrationScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    mobileNumber: '',
-    pin: '',
-    confirmPin: '',
+    name: "",
+    mobileNumber: "",
+    pin: "",
+    confirmPin: "",
   });
   const [showPin, setShowPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isOtpVerified, setIsOtpVerified] = useState(false);
+  const [confirmation, setConfirmation] = useState(null);
+
+  const recaptchaVerifier = React.useRef(null);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
@@ -42,66 +47,89 @@ const MobileRegistrationScreen = ({ navigation }) => {
     setOtp(newOtp);
 
     // Auto-focus next input
-    if (value !== '' && index < 5) {
+    if (value !== "" && index < 5) {
       // Logic for auto-focusing next input would go here
     }
   };
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (formData.mobileNumber.length !== 10) {
-      Alert.alert('Error', 'Please enter a valid 10-digit mobile number');
+      Alert.alert("Error", "Please enter a valid 10-digit mobile number");
       return;
     }
-    setIsOtpSent(true);
-    // Here you would typically make an API call to send OTP
-    Alert.alert('Success', 'OTP sent successfully!');
+
+    try {
+      const phoneProvider = `+91${formData.mobileNumber}`;
+      const confirmationResult = await signInWithPhoneNumber(
+        auth,
+        phoneProvider,
+        recaptchaVerifier.current
+      );
+      setConfirmation(confirmationResult);
+      setIsOtpSent(true);
+      Alert.alert("Success", "OTP sent successfully!");
+    } catch (error) {
+      Alert.alert("Error sending OTP", error.message);
+    }
   };
 
-  const handleVerifyOtp = () => {
-    // Here you would typically verify the OTP with your backend
-    // For now, we'll just simulate successful verification
-    setIsOtpVerified(true);
-    Alert.alert('Success', 'OTP verified successfully!');
+  const handleVerifyOtp = async () => {
+    const enteredOtp = otp.join("");
+    if (enteredOtp.length !== 6) {
+      Alert.alert("Error", "Please enter the 6-digit OTP");
+      return;
+    }
+
+    try {
+      await confirmation.confirm(enteredOtp);
+      setIsOtpVerified(true);
+      Alert.alert("Success", "OTP verified successfully!");
+    } catch (error) {
+      Alert.alert("Error verifying OTP", error.message);
+    }
   };
 
   const handleRegister = () => {
     if (!agreeToTerms) {
-      Alert.alert('Error', 'Please agree to the Privacy Policy and Terms of Use');
+      Alert.alert(
+        "Error",
+        "Please agree to the Privacy Policy and Terms of Use"
+      );
       return;
     }
     if (formData.pin !== formData.confirmPin) {
-      Alert.alert('Error', 'PINs do not match');
+      Alert.alert("Error", "PINs do not match");
       return;
     }
     if (formData.pin.length !== 4) {
-      Alert.alert('Error', 'PIN must be 4 digits');
+      Alert.alert("Error", "PIN must be 4 digits");
       return;
     }
     if (formData.mobileNumber.length !== 10) {
-      Alert.alert('Error', 'Please enter a valid 10-digit mobile number');
+      Alert.alert("Error", "Please enter a valid 10-digit mobile number");
       return;
     }
-    if (formData.name.trim() === '') {
-      Alert.alert('Error', 'Please enter your name');
+    if (formData.name.trim() === "") {
+      Alert.alert("Error", "Please enter your name");
       return;
     }
     if (!isOtpVerified) {
-      Alert.alert('Error', 'Please verify your mobile number first');
+      Alert.alert("Error", "Please verify your mobile number first");
       return;
     }
 
     // Here you would typically make an API call to register the user
-    Alert.alert('Success', 'Registration successful!', [
+    Alert.alert("Success", "Registration successful!", [
       {
-        text: 'OK',
-        onPress: () => navigation.navigate('Login'),
+        text: "OK",
+        onPress: () => navigation.navigate("Login"),
       },
     ]);
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -128,7 +156,7 @@ const MobileRegistrationScreen = ({ navigation }) => {
               style={styles.input}
               placeholder="Enter your full name"
               value={formData.name}
-              onChangeText={(text) => handleInputChange('name', text)}
+              onChangeText={(text) => handleInputChange("name", text)}
             />
           </View>
 
@@ -141,10 +169,15 @@ const MobileRegistrationScreen = ({ navigation }) => {
                 keyboardType="numeric"
                 maxLength={10}
                 value={formData.mobileNumber}
-                onChangeText={(text) => handleInputChange('mobileNumber', text)}
+                onChangeText={(text) => handleInputChange("mobileNumber", text)}
               />
               {isOtpVerified && (
-                <Ionicons name="checkmark-circle" size={24} color="#4CAF50" style={styles.verifiedIcon} />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={24}
+                  color="#4CAF50"
+                  style={styles.verifiedIcon}
+                />
               )}
             </View>
           </View>
@@ -197,14 +230,14 @@ const MobileRegistrationScreen = ({ navigation }) => {
                     keyboardType="numeric"
                     maxLength={4}
                     value={formData.pin}
-                    onChangeText={(text) => handleInputChange('pin', text)}
+                    onChangeText={(text) => handleInputChange("pin", text)}
                   />
                   <TouchableOpacity
                     style={styles.eyeIcon}
                     onPress={() => setShowPin(!showPin)}
                   >
                     <Ionicons
-                      name={showPin ? 'eye-off' : 'eye'}
+                      name={showPin ? "eye-off" : "eye"}
                       size={24}
                       color="#666"
                     />
@@ -222,14 +255,16 @@ const MobileRegistrationScreen = ({ navigation }) => {
                     keyboardType="numeric"
                     maxLength={4}
                     value={formData.confirmPin}
-                    onChangeText={(text) => handleInputChange('confirmPin', text)}
+                    onChangeText={(text) =>
+                      handleInputChange("confirmPin", text)
+                    }
                   />
                   <TouchableOpacity
                     style={styles.eyeIcon}
                     onPress={() => setShowConfirmPin(!showConfirmPin)}
                   >
                     <Ionicons
-                      name={showConfirmPin ? 'eye-off' : 'eye'}
+                      name={showConfirmPin ? "eye-off" : "eye"}
                       size={24}
                       color="#666"
                     />
@@ -243,14 +278,14 @@ const MobileRegistrationScreen = ({ navigation }) => {
                   onPress={() => setAgreeToTerms(!agreeToTerms)}
                 >
                   <Ionicons
-                    name={agreeToTerms ? 'checkbox' : 'square-outline'}
+                    name={agreeToTerms ? "checkbox" : "square-outline"}
                     size={24}
-                    color={agreeToTerms ? '#d32f2f' : '#666'}
+                    color={agreeToTerms ? "#d32f2f" : "#666"}
                   />
                 </TouchableOpacity>
                 <Text style={styles.termsText}>
-                  I agree to the{' '}
-                  <Text style={styles.termsLink}>Privacy Policy</Text> and{' '}
+                  I agree to the{" "}
+                  <Text style={styles.termsLink}>Privacy Policy</Text> and{" "}
                   <Text style={styles.termsLink}>Terms of Use</Text>
                 </Text>
               </View>
@@ -260,7 +295,10 @@ const MobileRegistrationScreen = ({ navigation }) => {
               </Text>
 
               <TouchableOpacity
-                style={[styles.registerButton, !agreeToTerms && styles.buttonDisabled]}
+                style={[
+                  styles.registerButton,
+                  !agreeToTerms && styles.buttonDisabled,
+                ]}
                 onPress={handleRegister}
                 disabled={!agreeToTerms}
               >
@@ -269,7 +307,7 @@ const MobileRegistrationScreen = ({ navigation }) => {
 
               <View style={styles.loginContainer}>
                 <Text style={styles.loginText}>Already have an account? </Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <TouchableOpacity onPress={() => navigation.navigate("Login")}>
                   <Text style={styles.loginLink}>Login</Text>
                 </TouchableOpacity>
               </View>
